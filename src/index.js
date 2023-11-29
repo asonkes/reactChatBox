@@ -12,7 +12,7 @@ const MyApp = () => (
   <Router>
     <Routes>
       <Route path='/' element={<Connexion />} />
-      <Route path='/pseudo/:pseudo' element={<App />} />
+      <Route path='/pseudo/:login' element={<App />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   </Router>
