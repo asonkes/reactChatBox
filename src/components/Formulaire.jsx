@@ -2,11 +2,12 @@ import React, { Component } from 'react';
 
 class Formulaire extends Component {
     state = { 
-        message: ''
+        message: '',
+        length: this.props.length
      } 
 
      createMessage = () => {
-        const {pseudo, addMessage} = this.props
+        const {pseudo, addMessage, length} = this.props
 
         // Message que l'utilisateur envoi à Dyma pour qu'il réponde.
         const message = {
@@ -17,13 +18,17 @@ class Formulaire extends Component {
         addMessage(message)
 
         //reset
-        this.setState({message: ''})
+        this.setState({message: '', length:length})
      }
 
      // Grâce à cette partie, on peut écrire, dans le bloc qui ets le formulaire....
+     // A chaque fois que j'écris une autre lettre, le chiffre de 140 diminue...
      handleChange = event => {
         const message = event.target.value 
-        this.setState({message:message})
+        //console.log(message.length)
+        const length =  this.props.length - message.length
+        // En fait ici, le 140, qui est indiqué, il veut que quand on écrit, le chiffre diminue en fonction du nombre de lettres notées (donc la longueur maximale c'est 140).
+        this.setState({message:message, length:length})
      }
 
      // Permet de voir si le texte (formulaire) ets bien envoyé...
@@ -33,19 +38,29 @@ class Formulaire extends Component {
         this.createMessage()
      }
 
+     // A chaque fois que tu cliques, c'est pour savoir quelle touche, l'utilisateur a touché
+     // Et donc on a évènement, car c'est quand tu cliques sur Enter, on va chercher la méthode "createMessage"...
+     // Donc cette méthode "createMessage", fait en sorte de terminer le message, donc on a plus besoin de cliquer sur "envoyer"
+     handleKeyUp = event => {
+        if(event.key === 'Enter') 
+        {
+            this.createMessage()
+        }
+     }
+
     render() { 
         return (
             <form className='form' onSubmit={this.handleSubmit}>
-                
                 <textarea
                     value={this.state.message}
                     onChange={this.handleChange} 
+                    onKeyUp={this.handleKeyUp}
                     required
-                    maxLength='140' 
+                    maxLength={'140'}
                 />
 
                 <div className='info'>
-                    140
+                    {this.state.length}
                 </div>
 
                 <button type="submit">

@@ -6,9 +6,14 @@ import reportWebVitals from './reportWebVitals';
 import Connexion from './components/Connexion';
 import NotFound from './components/NotFound';
 
+// Ici, on a mis un alias sur le BrowserRouter... C'est conseillé de faire ça...
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 const MyApp = () => (
+  // Ici, que se soit un BrowserRouter ou un HasshRouter, c'est la même chose acr on a mis un alias...
+  // Routes = C'est entre guillements, c'est mon body...
+  // Route = c'est chaque chemin, elle peut être soit orpheline, ou en paire...
+  // element = 
   <Router>
     <Routes>
       <Route path='/' element={<Connexion />} />
@@ -16,7 +21,6 @@ const MyApp = () => (
       <Route path="*" element={<NotFound />} />
     </Routes>
   </Router>
-
 )
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
