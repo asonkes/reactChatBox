@@ -1,45 +1,56 @@
-// {useState} me permet de créer un "state" dans une fonction et normalement, on ne peut créer un "state" que dans une "className"
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import Formulaire from './components/Formulaire';
 import Message from './components/Message';
 import { useParams } from 'react-router-dom';
 
+// firebase
+// On utilise la firebase pour pouvoir l'utiliser
+import database from './base';
+import { getDatabase, ref, set, remove, onValue } from 'firebase/database';
+
+// animation
+import { CSSTransition, TransitionGroup } from 'react-transition-group';
+
 const App = () => {
   let {login} = useParams()
-
-  // Mon state il s'appelle "pseudo"
-  // On a une méthode propre à chaque "state"
   const [pseudo, setPseudo] = useState(login)
-  // Ici, le message, je le type...
   const [messages, setMessages] = useState({})
 
-  // Lui , c'est l'ensemble des messages.
-  //const [message, setMessages] = useState({})
+  useEffect(() => {
+    console.log('test')
+    const dbMessagesRef = ref(database, 'messages')
+    // écouter d'event de changement des données
+    
+    // Là, c'est quand on récupère une "value"
+    onValue(dbMessagesRef, (snapshot)  => {
+      const data = snapshot.val()
+      if(data)
+      {
+        setMessages(data)
+      }
+    })
+  },[])
 
-  // ajout des messages aux autres messages(boite avec tous les messages)
   const addMessage = message => {
     const newMessages = {...messages}
-
-    // [1] ==> correspond à l'index
-    // newMessages[1] = message ==> On change cette methode à celle en -dessous
-    // Cette méthode permet de pouvoir à la limite utiliser et mettre en place la date d'envoi du message...
     newMessages[`message-${Date.now()}`] = message
 
-    // set = car je modifie ma barrière d'état
-    setMessages({newMessages})
+    // A partie du 1er élément, tu me prends les 10 derniers éléments
+    // C'est créé pour pouvoiur récupérer des éléments de la base de données...
+    Object.keys(newMessages).slice(0,10).forEach(key => {
+       newMessages[key] = null
+    })
+    setMessages(ref(database, '/', ), {
+      messages: newMessages
+    })
   }
   
-  // Object.keys lui fait un tableau qui indiquent chaque fois l'index des entrées(messages)
   const myMessages = Object.keys(messages).map(
-    // Ici je fais pas des accolades après le "key", car ici, c'est un "return"
     key => (
-      // Et ici, il y a un autre tableau qui est créé avec l'index, le pseudo et le message.
       <Message
       key={key}
       pseudo={messages[key].pseudo}
-      // message={messages.key.message}
-      // Si on écrit comme ça, il va écrire le mot "key"
       message={messages[key].message}
     />
       )
@@ -55,7 +66,6 @@ return (
   <Formulaire 
   pseudo={pseudo}
   addMessage={addMessage}
-  // ici length ne sera plus modifié
   length={140}
   />
 </div>
