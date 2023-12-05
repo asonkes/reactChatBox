@@ -9,13 +9,18 @@ import { useParams } from 'react-router-dom';
 import database from './base';
 import { getDatabase, ref, set, remove, onValue } from 'firebase/database';
 
-// animation
+// animation , c'est un composant qui va permettre de mettre à jour mes valeurs...
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
+import "./animation.css";
 
 const App = () => {
   let {login} = useParams()
   const [pseudo, setPseudo] = useState(login)
   const [messages, setMessages] = useState({})
+  // pour linstant, avec cela, je créé juste une référence avec :
+  // const nodeRef = useref()
+  const nodeRef = useRef()
+  const messageRef = useRef()
 
   useEffect(() => {
     console.log('test')
@@ -38,29 +43,46 @@ const App = () => {
 
     // A partie du 1er élément, tu me prends les 10 derniers éléments
     // C'est créé pour pouvoiur récupérer des éléments de la base de données...
-    Object.keys(newMessages).slice(0,10).forEach(key => {
+    Object.keys(newMessages).slice(0,-10).forEach(key => {
        newMessages[key] = null
     })
-    setMessages(ref(database, '/', ), {
+    set(ref(database, '/', ), {
       messages: newMessages
     })
   }
+
+  // ici, c'est une fonction qui va permettre dans la lecture des messages... 
+  // Cela va permettre de savoir qui envoyé le messsage (ex : Paolo : Bonjour)
+  // Donc ce nom devant le message, c'est le pseudo
+  const isUser = myPseudo => myPseudo === pseudo // pseudo qui se trouve dans l'url et on le détermine pour moi !!!
   
   const myMessages = Object.keys(messages).map(
     key => (
-      <Message
+      <CSSTransition
       key={key}
+      timeout={200}
+      className={'fade'}
+      nodeRef={nodeRef}
+      >
+
+      <Message
+      isUser = {isUser}
       pseudo={messages[key].pseudo}
       message={messages[key].message}
-    />
+      />
+      </CSSTransition>
       )
   )
 
+  // TransitionGroup = container de l'animation
+  // ref={messageRef} ==> comme ci on avait document.querySelector(...)
 return ( 
   <div className="box">
   <div>
-    <div className="messages">
-      {myMessages}
+    <div className="messages" ref={messageRef}>
+    <TransitionGroup className='message'>
+    {myMessages}
+    </TransitionGroup>
     </div>
   </div>
   <Formulaire 
