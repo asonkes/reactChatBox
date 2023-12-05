@@ -1,97 +1,88 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router';
 import './App.css';
 import Formulaire from './components/Formulaire';
 import Message from './components/Message';
-import { useParams } from 'react-router-dom';
-
-// firebase
-// On utilise la firebase pour pouvoir l'utiliser
-import database from './base';
-import { getDatabase, ref, set, remove, onValue } from 'firebase/database';
-
-// animation , c'est un composant qui va permettre de mettre à jour mes valeurs...
+// C'est plus DataBase que j'importe , c'est fireStore...
+import firestore from './base';
+// 1ere nouvelle fonction = doc, puis setDoc, puis onSnapshot...
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
-import "./animation.css";
+import './animation.css';
 
 const App = () => {
-  let {login} = useParams()
-  const [pseudo, setPseudo] = useState(login)
-  const [messages, setMessages] = useState({})
-  // pour linstant, avec cela, je créé juste une référence avec :
-  // const nodeRef = useref()
-  const nodeRef = useRef()
-  const messageRef = useRef()
+  const { login } = useParams();
+  const [messages, setMessages] = useState([]);
+  const [pseudo, setPseudo] = useState(login);
+  const messageRef = useRef();
+  const nodeRef = useRef();
 
   useEffect(() => {
-    console.log('test')
-    const dbMessagesRef = ref(database, 'messages')
-    // écouter d'event de changement des données
+    const dbMessagesRef = doc(firestore, 'messages', ' jyDTI2hXvkhFuTnGL95R '); // jyDTI2hXvkhFuTnGL95R = c'est mon identifiant // Attention, laissez les espaces sur le côté, au sinon problème...
     
-    // Là, c'est quand on récupère une "value"
-    onValue(dbMessagesRef, (snapshot)  => {
-      const data = snapshot.val()
-      if(data)
-      {
-        setMessages(data)
+    onSnapshot(dbMessagesRef /*ref = dbMessagesRef*/, (snapshot) => {
+      const data = snapshot.data();
+      if (data) {
+        // Modifier pour ne récupérer que les 10 derniers messages
+        const lastTenMessages = data.messages.slice(-10);
+        // Si je n'arrive pas à assigner les 10 derniers messages, j'assigne un dossier de messages VIDE
+        // || = ou [] = tableau vide...
+        // || = assignation conditionnelle, comme ça on est sûr qu'il trouve une réponse...
+        setMessages(lastTenMessages || []);
       }
-    })
-  },[])
+    });
+  }, [pseudo]);
 
-  const addMessage = message => {
-    const newMessages = {...messages}
-    newMessages[`message-${Date.now()}`] = message
+  const addMessage = (message) => {
+    // id: Date.now(), ...message ==> cetait pour ici, ajouter à chaque nouveau message, j'ajoute un id, la date et le message...
+    const newMessages = [...messages, { id: Date.now(), ...message }];
+   
+    // Limiter la taille du tableau à 10 messages
+    const limitedMessages = newMessages.slice(-10);
 
-    // A partie du 1er élément, tu me prends les 10 derniers éléments
-    // C'est créé pour pouvoiur récupérer des éléments de la base de données...
-    Object.keys(newMessages).slice(0,-10).forEach(key => {
-       newMessages[key] = null
-    })
-    set(ref(database, '/', ), {
-      messages: newMessages
-    })
-  }
+    // Ca cela permet par exemple, qd on a des ventes en ligne, si le temps qu'on se décide l'article est plus en stock, la fenêtre s'efface automatiquement...
+    // Firestore moins sécurisant et moins performante... PhpMyAdmin reste plus performant...
+    const messagesCollectionRef = doc(firestore, 'messages', ' jyDTI2hXvkhFuTnGL95R ');
 
-  // ici, c'est une fonction qui va permettre dans la lecture des messages... 
-  // Cela va permettre de savoir qui envoyé le messsage (ex : Paolo : Bonjour)
-  // Donc ce nom devant le message, c'est le pseudo
-  const isUser = myPseudo => myPseudo === pseudo // pseudo qui se trouve dans l'url et on le détermine pour moi !!!
-  
-  const myMessages = Object.keys(messages).map(
-    key => (
+    // Donc à force d'écrire les messages, ici le "limitedMessages" permet de limiter les 10 premiers messages, donc les autres, sont effacés... c'est pour que la base de données soit pas trop grande...
+    setDoc(messagesCollectionRef, { messages: limitedMessages });
+  };
+
+  const isUser = (myPseudo) => myPseudo === pseudo;
+
+  const myMessages = messages.map(
+    (message) => (
       <CSSTransition
-      key={key}
-      timeout={200}
-      className={'fade'}
-      nodeRef={nodeRef}
+        timeout={200}
+        classNames='fade'
+        key={message.id}
+        nodeRef={nodeRef}
       >
-
-      <Message
-      isUser = {isUser}
-      pseudo={messages[key].pseudo}
-      message={messages[key].message}
-      />
+        <Message
+          isUser={isUser}
+          pseudo={message.pseudo}
+          message={message.message}
+        />
       </CSSTransition>
-      )
-  )
+    )
+  );
 
-  // TransitionGroup = container de l'animation
-  // ref={messageRef} ==> comme ci on avait document.querySelector(...)
-return ( 
-  <div className="box">
-  <div>
-    <div className="messages" ref={messageRef}>
-    <TransitionGroup className='message'>
-    {myMessages}
-    </TransitionGroup>
+  return (
+    <div className='box'>
+      <div>
+        <div className="messages" ref={messageRef}>
+          <TransitionGroup className="message">
+            {myMessages}
+          </TransitionGroup>
+        </div>
+      </div>
+      <Formulaire
+        length={140}
+        pseudo={pseudo}
+        addMessage={addMessage}
+      />
     </div>
-  </div>
-  <Formulaire 
-  pseudo={pseudo}
-  addMessage={addMessage}
-  length={140}
-  />
-</div>
- );
-}
+  );
+};
 
 export default App;
